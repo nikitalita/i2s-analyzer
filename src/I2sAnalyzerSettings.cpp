@@ -118,6 +118,9 @@ I2sAnalyzerSettings::I2sAnalyzerSettings()
     AddExportExtension( 0, "text", "txt" );
     AddExportExtension( 0, "csv", "csv" );
 
+    AddExportOption( 1, "Export as wav file" );
+    AddExportExtension( 1, "wav", "wav");
+
     ClearChannels();
     AddChannel( mClockChannel, "PCM CLOCK", false );
     AddChannel( mFrameChannel, "PCM FRAME", false );

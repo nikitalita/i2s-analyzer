@@ -87,7 +87,88 @@ void I2sAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& /*channel
     }
 }
 
-void I2sAnalyzerResults::GenerateExportFile( const char* file, DisplayBase display_base, U32 /*export_type_user_id*/ )
+void I2sAnalyzerResults::GenerateExportFile( const char* file, DisplayBase display_base, U32 export_type_user_id )
+{
+    if (export_type_user_id == 0){
+        GenerateCSVFile(file, display_base);
+    } else {
+        GenerateWAVFile(file, display_base);
+    }
+}
+
+void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_base)
+{
+    std::stringstream ss;
+    void* f = AnalyzerHelpers::StartFile( file );
+
+    U64 trigger_sample = mAnalyzer->GetTriggerSample();
+    U32 sample_rate = mAnalyzer->GetSampleRate();
+
+    ss << "Time [s],Channel,Value" << std::endl;
+
+    U64 num_frames = GetNumFrames();
+    for( U64 i = 0; i < num_frames; i++ )
+    {
+        Frame frame = GetFrame( i );
+
+        if( I2sResultType( frame.mType ) == Channel1 )
+        {
+            char time_str[ 128 ];
+            AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive, trigger_sample, sample_rate, time_str, 128 );
+
+            char number_str[ 128 ];
+            if( ( display_base == Decimal ) && ( mSettings->mSigned == AnalyzerEnums::SignedInteger ) )
+            {
+                S64 signed_number = AnalyzerHelpers::ConvertToSignedNumber( frame.mData1, mSettings->mBitsPerWord );
+                std::stringstream ss;
+                ss << signed_number;
+                strcpy( number_str, ss.str().c_str() );
+            }
+            else
+            {
+                AnalyzerHelpers::GetNumberString( frame.mData1, display_base, mSettings->mBitsPerWord, number_str, 128 );
+            }
+
+            ss << time_str << ",1," << number_str << std::endl;
+        }
+
+        if( I2sResultType( frame.mType ) == Channel2 )
+        {
+            char time_str[ 128 ];
+            AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive, trigger_sample, sample_rate, time_str, 128 );
+
+            char number_str[ 128 ];
+            if( ( display_base == Decimal ) && ( mSettings->mSigned == AnalyzerEnums::SignedInteger ) )
+            {
+                S64 signed_number = AnalyzerHelpers::ConvertToSignedNumber( frame.mData1, mSettings->mBitsPerWord );
+                std::stringstream ss;
+                ss << signed_number;
+                strcpy( number_str, ss.str().c_str() );
+            }
+            else
+            {
+                AnalyzerHelpers::GetNumberString( frame.mData1, display_base, mSettings->mBitsPerWord, number_str, 128 );
+            }
+
+
+            ss << time_str << ",2," << number_str << std::endl;
+        }
+
+        AnalyzerHelpers::AppendToFile( ( U8* )ss.str().c_str(), ss.str().length(), f );
+        ss.str( std::string() );
+
+        if( UpdateExportProgressAndCheckForCancel( i, num_frames ) == true )
+        {
+            AnalyzerHelpers::EndFile( f );
+            return;
+        }
+    }
+
+    UpdateExportProgressAndCheckForCancel( num_frames, num_frames );
+    AnalyzerHelpers::EndFile( f );
+}
+
+void I2sAnalyzerResults::GenerateCSVFile( const char* file, DisplayBase display_base)
 {
     std::stringstream ss;
     void* f = AnalyzerHelpers::StartFile( file );

@@ -23,6 +23,8 @@ class I2sAnalyzerResults : public AnalyzerResults
 
     virtual void GenerateBubbleText( U64 frame_index, Channel& channel, DisplayBase display_base );
     virtual void GenerateExportFile( const char* file, DisplayBase display_base, U32 export_type_user_id );
+    virtual void GenerateCSVFile( const char* file, DisplayBase display_base );
+    virtual void GenerateWAVFile( const char* file, DisplayBase display_base );
 
     virtual void GenerateFrameTabularText( U64 frame_index, DisplayBase display_base );
     virtual void GeneratePacketTabularText( U64 packet_id, DisplayBase display_base );
