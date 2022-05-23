@@ -26,6 +26,8 @@ class WavWriter {
         
         bool startWriting();
 
+        template <typename Sample>
+        bool writeSample(Sample sample1, Sample sample2);
         bool writeData(const uint8_t sampleData[], //WAV format bytes
                        uint32_t sampleDataSize);
     

@@ -295,8 +295,19 @@ bool WavWriter::startWriting() {
     
     return true;
 }
+template <typename Sample>
+bool WavWriter::writeSample(Sample sample1, Sample sample2 ) {
+    if (!initialized) {
+        fprintf(stderr, "%s", UNINITIALIZED_MSG);
+        return false;
+    }
 
-
+    uint32_t sampleBlockSize = byteDepth * numChannels;
+    if (sampleDataSize % sampleBlockSize) {
+        fprintf(stderr, "Error: Sample data size doesn't divide evenly by sample block size.\n");
+        return false;
+    }
+}
 
 bool WavWriter::writeData(const uint8_t sampleData[], //WAV format bytes
                           uint32_t sampleDataSize) {
