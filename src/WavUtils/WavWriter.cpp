@@ -295,18 +295,40 @@ bool WavWriter::startWriting() {
     
     return true;
 }
-template <typename Sample>
-bool WavWriter::writeSample(Sample sample1, Sample sample2 ) {
+
+bool WavWriter::writeSample(uint64_t sample1, uint64_t sample2 ) {
     if (!initialized) {
         fprintf(stderr, "%s", UNINITIALIZED_MSG);
         return false;
     }
 
     uint32_t sampleBlockSize = byteDepth * numChannels;
-    if (sampleDataSize % sampleBlockSize) {
-        fprintf(stderr, "Error: Sample data size doesn't divide evenly by sample block size.\n");
+
+    size_t numBytesWritten = 0;
+    // we only handle 8/16/24/32 bits of precision, so we have to bitshift
+    sample1 = sample1 << (bitsPerSample % 8);
+    sample2 = sample2 << (bitsPerSample % 8);
+    // Samples are stored little endian, same as the host PCs
+    // Note this will not work on big-endian hosts
+    uint8_t * smp_ptr = (uint8_t *)&sample1;
+    numBytesWritten = fwrite(smp_ptr, 1, byteDepth, writeFile);
+    smp_ptr = (uint8_t *)&sample2;
+    numBytesWritten += fwrite(smp_ptr, 1, byteDepth, writeFile);
+    
+    // be sure to increment number of samples written
+    uint64_t newNumSamplesWritten = (uint64_t)numSamplesWritten +
+                                    (uint64_t)(numBytesWritten / (byteDepth * numChannels));
+    if (newNumSamplesWritten > MAX_UINT32) {
+        closeFile("Error: Problem writing sample data - overflow.\n");
         return false;
     }
+    numSamplesWritten = (uint32_t)newNumSamplesWritten;
+    
+    if (numBytesWritten < sampleBlockSize) {
+        closeFile("Error: Problem writing sample data.\n");
+        return false;
+    }
+    return true;
 }
 
 bool WavWriter::writeData(const uint8_t sampleData[], //WAV format bytes

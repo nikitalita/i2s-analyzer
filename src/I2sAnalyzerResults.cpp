@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <cstring>
+#include "WavUtils/WavWriter.hpp"
 
 #pragma warning( disable : 4996 ) // warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead.
 
@@ -98,74 +99,67 @@ void I2sAnalyzerResults::GenerateExportFile( const char* file, DisplayBase displ
 
 void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_base)
 {
-    std::stringstream ss;
-    void* f = AnalyzerHelpers::StartFile( file );
 
     U64 trigger_sample = mAnalyzer->GetTriggerSample();
     U32 sample_rate = mAnalyzer->GetSampleRate();
-
-    ss << "Time [s],Channel,Value" << std::endl;
-
+    WavWriter wavWriter;
+    if (!wavWriter.initialize(file, sample_rate, 2, true, mSettings->mBitsPerWord)){
+        return;
+    }
+    if (!wavWriter.startWriting()){
+        return;
+    }
     U64 num_frames = GetNumFrames();
+    U64 l_buffer[16];
+    int l_bufsize = 0;
+    U64 r_buffer[16];
+    int r_bufsize = 0;
+    
     for( U64 i = 0; i < num_frames; i++ )
     {
-        Frame frame = GetFrame( i );
+        Frame frame;
 
-        if( I2sResultType( frame.mType ) == Channel1 )
+        for (;I2sResultType(frame.mType) != Channel2 || i >= num_frames; i++)
         {
-            char time_str[ 128 ];
-            AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive, trigger_sample, sample_rate, time_str, 128 );
-
-            char number_str[ 128 ];
-            if( ( display_base == Decimal ) && ( mSettings->mSigned == AnalyzerEnums::SignedInteger ) )
-            {
-                S64 signed_number = AnalyzerHelpers::ConvertToSignedNumber( frame.mData1, mSettings->mBitsPerWord );
-                std::stringstream ss;
-                ss << signed_number;
-                strcpy( number_str, ss.str().c_str() );
-            }
-            else
-            {
-                AnalyzerHelpers::GetNumberString( frame.mData1, display_base, mSettings->mBitsPerWord, number_str, 128 );
-            }
-
-            ss << time_str << ",1," << number_str << std::endl;
+            frame = GetFrame( i );
+            l_buffer[l_bufsize] = frame.mData1;
+            l_bufsize++;
         }
-
-        if( I2sResultType( frame.mType ) == Channel2 )
+        for (;I2sResultType(frame.mType) != Channel1 || i >= num_frames; i++)
         {
-            char time_str[ 128 ];
-            AnalyzerHelpers::GetTimeString( frame.mStartingSampleInclusive, trigger_sample, sample_rate, time_str, 128 );
-
-            char number_str[ 128 ];
-            if( ( display_base == Decimal ) && ( mSettings->mSigned == AnalyzerEnums::SignedInteger ) )
-            {
-                S64 signed_number = AnalyzerHelpers::ConvertToSignedNumber( frame.mData1, mSettings->mBitsPerWord );
-                std::stringstream ss;
-                ss << signed_number;
-                strcpy( number_str, ss.str().c_str() );
-            }
-            else
-            {
-                AnalyzerHelpers::GetNumberString( frame.mData1, display_base, mSettings->mBitsPerWord, number_str, 128 );
-            }
-
-
-            ss << time_str << ",2," << number_str << std::endl;
+            frame = GetFrame( i );
+            r_buffer[r_bufsize] = frame.mData1;
+            r_bufsize++;
         }
-
-        AnalyzerHelpers::AppendToFile( ( U8* )ss.str().c_str(), ss.str().length(), f );
-        ss.str( std::string() );
-
+        // first sample was right channel, get left channel
+        if (l_bufsize == 0){
+            for (;I2sResultType(frame.mType) != Channel2 || i >= num_frames; i++)
+            {
+                frame = GetFrame( i );
+                l_buffer[l_bufsize] = frame.mData1;
+                l_bufsize++;
+            }
+        }
+        if (l_bufsize != r_bufsize){
+            AddResultString( "Error: samples corrupted" );
+            return;
+        }
+        // back up
+        i--;
+        for (int j; j < l_bufsize; j++){
+            if (!wavWriter.writeSample(l_buffer[j], r_buffer[j])){
+                AddResultString( "Error: Failed to write samples" );
+                return;
+            }
+        }
         if( UpdateExportProgressAndCheckForCancel( i, num_frames ) == true )
         {
-            AnalyzerHelpers::EndFile( f );
             return;
         }
     }
 
     UpdateExportProgressAndCheckForCancel( num_frames, num_frames );
-    AnalyzerHelpers::EndFile( f );
+    wavWriter.finishWriting();
 }
 
 void I2sAnalyzerResults::GenerateCSVFile( const char* file, DisplayBase display_base)
