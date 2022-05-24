@@ -20,6 +20,10 @@ src/I2sAnalyzerSettings.cpp
 src/I2sAnalyzerSettings.h
 src/I2sSimulationDataGenerator.cpp
 src/I2sSimulationDataGenerator.h
+src/WavUtils/WavHeader.hpp
+src/WavUtils/WavWriter.hpp
+src/WavUtils/WavWriter.cpp
+
 )
 
 add_analyzer_plugin(i2s_analyzer SOURCES ${SOURCES})

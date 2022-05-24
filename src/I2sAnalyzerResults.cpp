@@ -91,9 +91,9 @@ void I2sAnalyzerResults::GenerateBubbleText( U64 frame_index, Channel& /*channel
 void I2sAnalyzerResults::GenerateExportFile( const char* file, DisplayBase display_base, U32 export_type_user_id )
 {
     if (export_type_user_id == 0){
-        GenerateCSVFile(file, display_base);
+        GenerateWAVFile( file, display_base );
     } else {
-        GenerateWAVFile(file, display_base);
+        GenerateCSVFile(file, display_base);
     }
 }
 
@@ -101,7 +101,7 @@ void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_
 {
 
     U64 trigger_sample = mAnalyzer->GetTriggerSample();
-    U32 sample_rate = mAnalyzer->GetSampleRate();
+    U32 sample_rate = 44100;
     WavWriter wavWriter;
     if (!wavWriter.initialize(file, sample_rate, 2, true, mSettings->mBitsPerWord)){
         return;
@@ -117,27 +117,27 @@ void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_
     
     for( U64 i = 0; i < num_frames; i++ )
     {
-        Frame frame;
+        Frame frame = GetFrame( i );
 
-        for (;I2sResultType(frame.mType) != Channel2 || i >= num_frames; i++)
+        while (I2sResultType(frame.mType) != Channel2 && i < num_frames)
         {
-            frame = GetFrame( i );
             l_buffer[l_bufsize] = frame.mData1;
             l_bufsize++;
+            frame = GetFrame( ++i );
         }
-        for (;I2sResultType(frame.mType) != Channel1 || i >= num_frames; i++)
+        while (I2sResultType(frame.mType) != Channel1 && i < num_frames)
         {
-            frame = GetFrame( i );
             r_buffer[r_bufsize] = frame.mData1;
             r_bufsize++;
+            frame = GetFrame( ++i );
         }
         // first sample was right channel, get left channel
         if (l_bufsize == 0){
-            for (;I2sResultType(frame.mType) != Channel2 || i >= num_frames; i++)
+            while( I2sResultType( frame.mType ) != Channel2 && i < num_frames )
             {
-                frame = GetFrame( i );
-                l_buffer[l_bufsize] = frame.mData1;
+                l_buffer[ l_bufsize ] = frame.mData1;
                 l_bufsize++;
+                frame = GetFrame( ++i );
             }
         }
         if (l_bufsize != r_bufsize){
@@ -146,7 +146,7 @@ void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_
         }
         // back up
         i--;
-        for (int j; j < l_bufsize; j++){
+        for (int j = 0; j < l_bufsize; j++){
             if (!wavWriter.writeSample(l_buffer[j], r_buffer[j])){
                 AddResultString( "Error: Failed to write samples" );
                 return;

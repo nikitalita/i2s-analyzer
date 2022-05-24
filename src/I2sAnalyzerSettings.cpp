@@ -113,14 +113,14 @@ I2sAnalyzerSettings::I2sAnalyzerSettings()
     AddInterface( mSignedInterface.get() );
     AddInterface( mWordSelectInvertedInterface.get() );
 
+
+    AddExportOption( 0, "Export as wav file" );
+    AddExportExtension( 0, "wav", "wav");
+
     // AddExportOption( 0, "Export as text/csv file", "text (*.txt);;csv (*.csv)" );
-    AddExportOption( 0, "Export as text/csv file" );
-    AddExportExtension( 0, "text", "txt" );
-    AddExportExtension( 0, "csv", "csv" );
-
-    AddExportOption( 1, "Export as wav file" );
-    AddExportExtension( 1, "wav", "wav");
-
+    AddExportOption( 1, "Export as text/csv file" );
+    AddExportExtension( 1, "text", "txt" );
+    AddExportExtension( 1, "csv", "csv" );
     ClearChannels();
     AddChannel( mClockChannel, "PCM CLOCK", false );
     AddChannel( mFrameChannel, "PCM FRAME", false );

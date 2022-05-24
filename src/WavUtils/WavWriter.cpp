@@ -55,7 +55,9 @@ bool WavWriter::initialize(const char* writeFilePath,
         return false;
     }
     this->bitsPerSample = bitsPerSample;
-    this->byteDepth = bitsPerSample / 8 + bitsPerSample % 8 > 0 ? 1 : 0;
+    int thing = bitsPerSample / 8;
+    int thing2 = ( ( bitsPerSample % 8 > 0 ) ? 1 : 0 );
+    this->byteDepth = bitsPerSample / 8 + ((bitsPerSample % 8 > 0) ? 1 : 0);
     
     //Validate byte depth + int/float combination
     if ( !((samplesAreInts && (byteDepth == 1 || byteDepth == 2 || byteDepth == 3 || byteDepth == 4)) ||
