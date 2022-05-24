@@ -103,7 +103,10 @@ void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_
     U64 trigger_sample = mAnalyzer->GetTriggerSample();
     U32 sample_rate = 44100;
     WavWriter wavWriter;
-    if (!wavWriter.initialize(file, sample_rate, 2, true, mSettings->mBitsPerWord)){
+    std::string thing = file;
+    thing = thing.substr( 0, thing.size() - 3 ) + "wav";
+    if( !wavWriter.initialize( thing.c_str(), sample_rate, 2, true, mSettings->mBitsPerWord ) )
+    {
         return;
     }
     if (!wavWriter.startWriting()){
@@ -152,6 +155,7 @@ void I2sAnalyzerResults::GenerateWAVFile( const char* file, DisplayBase display_
                 return;
             }
         }
+        l_bufsize = r_bufsize = 0;
         if( UpdateExportProgressAndCheckForCancel( i, num_frames ) == true )
         {
             return;

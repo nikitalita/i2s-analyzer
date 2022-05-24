@@ -308,8 +308,8 @@ bool WavWriter::writeSample(uint64_t sample1, uint64_t sample2 ) {
 
     size_t numBytesWritten = 0;
     // we only handle 8/16/24/32 bits of precision, so we have to bitshift
-    sample1 = sample1 << (bitsPerSample % 8);
-    sample2 = sample2 << (bitsPerSample % 8);
+    sample1 = sample1 << (8 - (bitsPerSample % 8));
+    sample2 = sample2 << (8 - (bitsPerSample % 8));
     // Samples are stored little endian, same as the host PCs
     // Note this will not work on big-endian hosts
     uint8_t * smp_ptr = (uint8_t *)&sample1;
